@@ -19,3 +19,6 @@ Clone this repo to #concrete5.7root#/packages/mail_chimp
 
 ###Uses
 [MailChimp API v2 wrapper](https://github.com/drewm/mailchimp-api)
+
+#### License
+This package is licensed under the terms of the MIT license.
