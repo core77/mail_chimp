@@ -4,6 +4,7 @@ namespace Concrete\Package\MailChimp\Block\MailChimp;
 require("vendor/autoload.php");
 
 use Concrete\Core\Block\BlockController;
+use Concrete\Core\Validation\CSRF\Token;
 use Drewm\MailChimp;
 
 class Controller extends BlockController
@@ -30,7 +31,7 @@ class Controller extends BlockController
     public function getMcApiKey()
     {
         //we hardcode this
-        $key = '#your-API-key#';
+        $key = '';
 
         return $key;
     }
@@ -38,7 +39,7 @@ class Controller extends BlockController
     public function getMcListToSubscribe()
     {
         //we hardcode this
-        $listId = '#your-list-ID#';
+        $listId = '';
 
         return $listId;
     }
@@ -54,17 +55,23 @@ class Controller extends BlockController
 
     public function action_mc_subscribe()
     {
-        $email = $this->post('email');
+        $valid = id(new Token)->validate('mail_chimp', $this->post('token'));
 
-        $MailChimp = new MailChimp($this->getMcApiKey());
-        $result = $MailChimp->call('lists/subscribe', array(
-                'id'                => $this->getMcListToSubscribe(),
-                'email'             => array('email'=>$email),
-                'merge_vars'        => array('FNAME'=>'', 'LNAME'=>''),
-                'double_optin'      => true,
-                'update_existing'   => true,
-                'replace_interests' => false,
-                'send_welcome'      => false,
-            ));
+        if ($valid) {
+            $email = $this->post('email');
+
+            $MailChimp = new MailChimp($this->getMcApiKey());
+            $result = $MailChimp->call('lists/subscribe', array(
+                    'id'                => $this->getMcListToSubscribe(),
+                    'email'             => array('email'=>$email),
+                    'merge_vars'        => array('FNAME'=>'', 'LNAME'=>''),
+                    'double_optin'      => true,
+                    'update_existing'   => true,
+                    'replace_interests' => false,
+                    'send_welcome'      => false,
+                ));
+        } else {
+            die("Access Denied.");
+        }
     }
 }
