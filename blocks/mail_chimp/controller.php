@@ -26,6 +26,13 @@ class Controller extends BlockController
     public function view()
     {
         $this->set('listsTotal', $this->getMcListsTotal());
+        $this->set('token', $this->getToken());
+    }
+
+    public function getToken() {
+        $token = id(new Token)->generate('mail_chimp');
+
+        return $token;
     }
 
     public function getMcApiKey()
