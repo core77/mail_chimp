@@ -5,6 +5,7 @@ require("vendor/autoload.php");
 
 use Concrete\Core\Block\BlockController;
 use Concrete\Core\Validation\CSRF\Token;
+use Concrete\Core\Form\Service\Validation;
 use Drewm\MailChimp;
 
 class Controller extends BlockController
@@ -25,8 +26,9 @@ class Controller extends BlockController
 
     public function view()
     {
-        $this->set('listsTotal', $this->getMcListsTotal());
         $this->set('token', $this->getToken());
+        //we don't use this
+        //$this->set('listsTotal', $this->getMcListsTotal()); 
     }
 
     public function getToken() {
@@ -51,34 +53,52 @@ class Controller extends BlockController
         return $listId;
     }
 
-    public function getMcListsTotal()
-    {
-        $MailChimp = new MailChimp($this->getMcApiKey());
-        $lists = $MailChimp->call('lists/list');
-        $listsTotal = $lists['total'];
+    // public function getMcListsTotal()
+    // {
+    //     $MailChimp = new MailChimp($this->getMcApiKey());
+    //     $lists = $MailChimp->call('lists/list');
+    //     $listsTotal = $lists['total'];
 
-        return $listsTotal;
-    }
+    //     return $listsTotal;
+    // }
 
     public function action_mc_subscribe()
     {
         $valid = id(new Token)->validate('mail_chimp', $this->post('token'));
-
         if ($valid) {
-            $email = $this->post('email');
 
-            $MailChimp = new MailChimp($this->getMcApiKey());
-            $result = $MailChimp->call('lists/subscribe', array(
-                    'id'                => $this->getMcListToSubscribe(),
-                    'email'             => array('email'=>$email),
-                    'merge_vars'        => array('FNAME'=>'', 'LNAME'=>''),
-                    'double_optin'      => true,
-                    'update_existing'   => true,
-                    'replace_interests' => false,
-                    'send_welcome'      => false,
-                ));
+            $val = new Validation;
+            $val->setData($this->post());
+            $val->addRequiredEmail('email', 'Please enter a valid email adress.');
+            if ($val->test()) {
+                    
+                    $email = $this->post('email');
+
+                    $MailChimp = new MailChimp($this->getMcApiKey());
+                    $result = $MailChimp->call('lists/subscribe', array(
+                            'id'                => $this->getMcListToSubscribe(),
+                            'email'             => array('email'=>$email),
+                            'merge_vars'        => array('FNAME'=>'', 'LNAME'=>''),
+                            'double_optin'      => true,
+                            'update_existing'   => true,
+                            'replace_interests' => false,
+                            'send_welcome'      => false,
+                        ));
+
+                    if ($result) {
+                        $this->set('subscribed', true);
+                    }
+
+                    unset($result);
+
+            } else {
+                $errorArray = $val->getError()->getList(); 
+                $this->set('errorArray', $errorArray); // send array to view
+            }
+
         } else {
-            die("Access Denied.");
+                die("Access Denied.");
         }
+
     }
 }
